@@ -7541,6 +7541,157 @@ test('Multiple Items ("عناصر متعددة") extension for Image & Video mod
   }
 });
 
+test('Lifta Swash Fixed Regular and Palestine Regular are registered with Arabic-only labels, available in all 39 styles without exception, calibrated, and render cleanly', () => {
+  const expectedEntries: { family: ArabicFontFamily; labelAr: string }[] = [
+    { family: 'Lifta Swash Fixed Regular', labelAr: 'لفتا سوش' },
+    { family: 'Palestine Regular', labelAr: 'فلسطين' },
+  ];
+
+  // 1) Registered in both main and author Arabic font lists with Arabic-only labels
+  for (const { family, labelAr } of expectedEntries) {
+    const mainEntry = ARABIC_FONTS_LIST.find((f) => f.family === family);
+    assert.ok(mainEntry, `ARABIC_FONTS_LIST must include ${family}`);
+    assert.equal(mainEntry!.labelAr, labelAr);
+    assert.ok(!/[A-Za-z]/.test(mainEntry!.labelAr), `Label for ${family} must be Arabic only`);
+
+    const authorEntry = AUTHOR_ARABIC_FONTS_LIST.find((f) => f.family === family);
+    assert.ok(authorEntry, `AUTHOR_ARABIC_FONTS_LIST must include ${family}`);
+    assert.equal(authorEntry!.labelAr, labelAr);
+  }
+
+  // 2) Included in all 39 styles without exception (including terminal/typewriter styles)
+  assert.equal(ALL_STYLES_LIST.length, 39);
+  for (const st of ALL_STYLES_LIST) {
+    if (st.allowedFonts && st.allowedFonts.length > 0) {
+      for (const { family } of expectedEntries) {
+        assert.ok(
+          st.allowedFonts.includes(family),
+          `Style ${st.id} must include ${family} in allowedFonts`
+        );
+      }
+    }
+  }
+
+  // 3) Calibration profiles & preferred weight 400 prevent faux-bolding
+  const liftaCal = getFontCalibration('Lifta Swash Fixed Regular');
+  const palestineCal = getFontCalibration('Palestine Regular');
+
+  assert.equal(liftaCal.preferredWeight, 400);
+  assert.ok(liftaCal.sizeScale < 1);
+  assert.ok(liftaCal.minLineHeightRatio >= 1.66);
+  assert.ok(liftaCal.fallbackChain?.includes('"Reem Kufi"'));
+
+  assert.equal(palestineCal.preferredWeight, 400);
+  assert.ok(palestineCal.minLineHeightRatio >= 1.64);
+  assert.ok(palestineCal.fallbackChain?.includes('"Aref Ruqaa"'));
+
+  assert.deepEqual(resolveStudioFontSpec('Lifta Swash Fixed Regular', 700), {
+    cssFontFamily: 'Lifta Swash Fixed Regular',
+    cssFontWeight: 400,
+  });
+  assert.deepEqual(resolveStudioFontSpec('Palestine Regular', 800), {
+    cssFontFamily: 'Palestine Regular',
+    cssFontWeight: 400,
+  });
+
+  const ctx = createMockCanvasContextForChat();
+  applyStudioCanvasTextProps(ctx, 'Lifta Swash Fixed Regular', 700, 48, 'rtl');
+  assert.ok(ctx.font.startsWith('400 48px "Lifta Swash Fixed Regular"'));
+  assert.ok(ctx.font.includes('"Reem Kufi"'));
+
+  applyStudioCanvasTextProps(ctx, 'Palestine Regular', 800, 48, 'rtl');
+  assert.ok(ctx.font.startsWith('400 48px "Palestine Regular"'));
+  assert.ok(ctx.font.includes('"Aref Ruqaa"'));
+
+  // 4) Calibrated layout stays within safe box bounds
+  for (const { family } of expectedEntries) {
+    const layout = layoutArabicQuote(ctx, {
+      text: 'نص عربي *جميل* للتجربة مع 2026 Arabic & English داخل الإطار الآمن',
+      quotationMarks: 'none',
+      fontFamily: family,
+      fontWeight: 700,
+      minFontSize: 28,
+      maxFontSize: 56,
+      fontSizeMultiplier: 1.0,
+      lineHeightRatio: 1.55,
+      boxX: 40,
+      boxY: 40,
+      boxWidth: 720,
+      boxHeight: 420,
+      align: 'center',
+      direction: 'rtl',
+    });
+    assert.ok(layout.maxLineWidth <= 720 * 1.03, `${family} maxLineWidth within box`);
+    assert.ok(layout.totalHeight <= 420 * 1.05, `${family} totalHeight within box`);
+    assert.ok(layout.lineHeightRatio >= 1.66, `${family} lineHeightRatio >= 1.66`);
+  }
+
+  // 5) Render sample styles across modes including terminal & typewriter in 16:9 and 9:16
+  const sampleStyles = [
+    { mode: 'quote' as const, styleId: 'midnight-blue' as const },
+    { mode: 'phrase' as const, styleId: 'pixel_terminal' as const },
+    { mode: 'phrase' as const, styleId: 'old_typewriter' as const },
+    { mode: 'chat' as const, styleId: 'chat_terminal' as const },
+    { mode: 'points' as const, styleId: 'pts_clean' as const },
+    { mode: 'image' as const, styleId: 'img_polaroid' as const },
+  ];
+
+  for (const format of ['16:9', '9:16'] as const) {
+    const baseW = format === '16:9' ? 1920 : 1080;
+    const baseH = format === '16:9' ? 1080 : 1920;
+    for (const { mode, styleId } of sampleStyles) {
+      for (const { family } of expectedEntries) {
+        const custom: StyleCustomization = {
+          mode,
+          styleId,
+          phraseStyleId: mode === 'phrase' ? styleId : undefined,
+          chatStyleId: mode === 'chat' ? styleId : undefined,
+          pointsStyleId: mode === 'points' ? styleId : undefined,
+          imageStyleId: mode === 'image' ? styleId : undefined,
+          format,
+          position: 'center',
+          backgroundMode: 'style',
+          greenScreen: false,
+          accentColor: '#38BDF8',
+          keywordColor: '#FFD400',
+          quoteFontOverride: family,
+          authorFontOverride: family,
+          fontSizeMultiplier: 1.0,
+          minimalShape: 'circle',
+          seed: 42,
+        };
+        const content: QuoteContent = {
+          quoteText: 'كلمات *خالدة* تُكتب بخط عربي أصيل',
+          authorName: 'الكاتب',
+          subtitle: 'اختبار الخطوط',
+          photoSource: null,
+          photoId: 'none',
+          crop: { zoom: 1, offsetX: 0, offsetY: 0 },
+          quotationMarks: 'guillemets',
+          imageCaption: 'تعليق *مميز* بالخط الجديد',
+        };
+        const timeline: TimelineConfig = {
+          enterDuration: 2.0,
+          holdDuration: 3.0,
+          exitDuration: 1.0,
+          autoHold: false,
+        };
+        const renderCtx = createMockCanvasContextForChat();
+        assert.doesNotThrow(() => {
+          renderQuoteFrame(renderCtx, 1.8, content, timeline, custom, {
+            width: baseW,
+            height: baseH,
+            baseWidth: baseW,
+            baseHeight: baseH,
+            scale: 1,
+          });
+        }, `renderQuoteFrame must succeed for ${styleId} (${format}) with ${family}`);
+      }
+    }
+  }
+});
+
+
 
 
 

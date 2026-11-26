@@ -72,6 +72,8 @@ export const PIXEL_TERMINAL_CONFIG = {
     'Almarai',
     'Almarai Bold',
     'Almarai ExtraBold',
+    'Lifta Swash Fixed Regular',
+    'Palestine Regular',
   ] as ArabicFontFamily[],
   colors: {
     bgDarkBlue: '#05070D',

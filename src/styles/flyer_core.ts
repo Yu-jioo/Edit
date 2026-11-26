@@ -201,6 +201,8 @@ export const NON_MONO_ARABIC_FONTS: ArabicFontFamily[] = [
   'KOMission Black',
   'Zain Rounded instance mob',
   '29LT Azahar Display AL TN Trial Bold',
+  'Lifta Swash Fixed Regular',
+  'Palestine Regular',
 ];
 
 export const FLYER_ENGLISH_FONTS: EnglishFontFamily[] = [

@@ -60,6 +60,8 @@ export const TORN_PAPER_CONFIG = {
     'KOMission Black',
     'Zain Rounded instance mob',
     '29LT Azahar Display AL TN Trial Bold',
+    'Lifta Swash Fixed Regular',
+    'Palestine Regular',
   ] as ArabicFontFamily[],
   allowedEnglishFonts: [
     'Special Elite',

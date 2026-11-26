@@ -487,6 +487,32 @@ export function getFontCalibration(fontFamily: string): FontCalibrationProfile {
       fallbackChain: '"Amiri", "Noto Naskh Arabic", sans-serif',
     };
   }
+  if (fontFamily === 'Lifta Swash Fixed Regular') {
+    return {
+      sizeScale: 0.94,
+      lineHeightBonus: 0.1,
+      minLineHeightRatio: 1.68,
+      spaceRatio: 0.37,
+      baselineOffsetRatio: 0.14,
+      keywordRectTopFactor: 0.98,
+      keywordRectBottomFactor: 0.36,
+      preferredWeight: 400,
+      fallbackChain: '"Reem Kufi", "Cairo", "Noto Naskh Arabic", sans-serif',
+    };
+  }
+  if (fontFamily === 'Palestine Regular') {
+    return {
+      sizeScale: 1.0,
+      lineHeightBonus: 0.08,
+      minLineHeightRatio: 1.66,
+      spaceRatio: 0.36,
+      baselineOffsetRatio: 0.12,
+      keywordRectTopFactor: 0.92,
+      keywordRectBottomFactor: 0.36,
+      preferredWeight: 400,
+      fallbackChain: '"Aref Ruqaa", "Amiri", "Noto Naskh Arabic", sans-serif',
+    };
+  }
   if (
     fontFamily === 'Reem Kufi' ||
     fontFamily === 'Aref Ruqaa' ||
@@ -1018,6 +1044,8 @@ export async function ensureArabicFontsLoaded(): Promise<void> {
     '400 32px "Zain"',
     '700 32px "Zain"',
     '700 32px "29LT Azahar Display AL TN Trial Bold"',
+    '400 32px "Lifta Swash Fixed Regular"',
+    '400 32px "Palestine Regular"',
   ];
 
   try {

@@ -62,6 +62,8 @@ export const IMG_CINEMATIC_CONFIG = {
     'KOMission Black',
     'Zain Rounded instance mob',
     '29LT Azahar Display AL TN Trial Bold',
+    'Lifta Swash Fixed Regular',
+    'Palestine Regular',
   ] as ArabicFontFamily[],
   allowedEnglishFonts: ['Cinzel', 'Plus Jakarta Sans', 'Playfair Display'] as EnglishFontFamily[],
   colors: {

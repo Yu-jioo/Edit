@@ -333,7 +333,9 @@ export type ArabicFontFamily =
   | 'Katibeh'
   | 'KOMission Black'
   | 'Zain Rounded instance mob'
-  | '29LT Azahar Display AL TN Trial Bold';
+  | '29LT Azahar Display AL TN Trial Bold'
+  | 'Lifta Swash Fixed Regular'
+  | 'Palestine Regular';
 
 export type EnglishFontFamily =
   | 'Playfair Display'

@@ -513,6 +513,8 @@ export const ARABIC_FONTS_LIST: { family: ArabicFontFamily; labelAr: string }[] 
   { family: 'KOMission Black', labelAr: 'كوميشن بلاك (KOMission Black — عريض جريء)' },
   { family: 'Zain Rounded instance mob', labelAr: 'زين مدور (Zain Rounded — ناعم مستدير)' },
   { family: '29LT Azahar Display AL TN Trial Bold', labelAr: 'أزهار ديسبلاي بولد (29LT Azahar Display Bold — عريض أنيق)' },
+  { family: 'Lifta Swash Fixed Regular', labelAr: 'لفتا سوش' },
+  { family: 'Palestine Regular', labelAr: 'فلسطين' },
 ];
 
 export const AUTHOR_ARABIC_FONTS_LIST = ARABIC_FONTS_LIST.filter(

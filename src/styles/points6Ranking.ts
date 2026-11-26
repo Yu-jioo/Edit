@@ -71,6 +71,8 @@ export const PTS_RANKING_CONFIG = {
     'KOMission Black',
     'Zain Rounded instance mob',
     '29LT Azahar Display AL TN Trial Bold',
+    'Lifta Swash Fixed Regular',
+    'Palestine Regular',
   ] as ArabicFontFamily[],
   allowedEnglishFonts: ['Bebas Neue', 'Oswald', 'Plus Jakarta Sans'] as EnglishFontFamily[],
   colors: {

@@ -70,6 +70,8 @@ export const OLD_TYPEWRITER_CONFIG = {
     'Almarai',
     'Almarai Bold',
     'Almarai ExtraBold',
+    'Lifta Swash Fixed Regular',
+    'Palestine Regular',
   ] as ArabicFontFamily[],
   allowedEnglishFonts: [
     'Special Elite',
