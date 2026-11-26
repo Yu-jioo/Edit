@@ -47,7 +47,7 @@ export const GAL_ORBIT_CONFIG: StyleMetadata = {
   defaultAuthorFont: 'Cairo',
   defaultEnglishQuoteFont: 'Outfit',
   defaultEnglishAuthorFont: 'Plus Jakarta Sans',
-  supportedBackgrounds: ['style', 'green'],
+  supportedBackgrounds: ['style', 'green', 'black'],
   recommendedBackground: 'green',
 };
 
@@ -139,6 +139,9 @@ export function renderGalOrbit(
 
   if (isGreen) {
     ctx.fillStyle = '#00FF00';
+    ctx.fillRect(0, 0, W, H);
+  } else if (bgMode === 'black') {
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
   } else {
     const bgCanvas = getCachedSpaceBackground(W, H, custom.seed, accentColor);

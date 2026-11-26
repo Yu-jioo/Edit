@@ -133,6 +133,14 @@ import {
   computeGalleryFocusWeights,
   computeDrawableGreenRatio,
   resolveGalleryBoxPixels,
+  GAL_CIRCLE_CONFIG,
+  CIRCLE_FOCUS_MAX_SCALE,
+  CIRCLE_STEP_ROTATE_SEC,
+  DEFAULT_GALLERY_CIRCLE_SPEED,
+  DEFAULT_GALLERY_CIRCLE_RING_THICKNESS,
+  computeCircleGalleryGeometry,
+  sampleCircleGalleryState,
+  getFocusAngleRad,
 } from '../styles';
 import {
   buildBranchTreeLayout,
@@ -1871,8 +1879,8 @@ test('Almarai Regular, Bold, and ExtraBold 800 are available in all 25 styles pr
   assert.ok(!AUTHOR_ARABIC_FONTS_LIST.some((f) => f.family === 'Almarai Bold'));
   assert.ok(!AUTHOR_ARABIC_FONTS_LIST.some((f) => f.family === 'Almarai ExtraBold'));
 
-  // 3) Every single style in ALL_STYLES_LIST (all 39 styles across modes + 5 gallery styles) allows all 3 Almarai variants
-  assert.equal(ALL_STYLES_LIST.length, 39);
+  // 3) Every single style in ALL_STYLES_LIST (all 40 styles across modes + 6 gallery styles) allows all 3 Almarai variants
+  assert.equal(ALL_STYLES_LIST.length, 40);
   for (const st of ALL_STYLES_LIST) {
     if (st.allowedFonts && st.allowedFonts.length > 0) {
       for (const variant of almaraiVariants) {
@@ -1998,7 +2006,7 @@ test('KOMission Black, Zain Rounded instance mob, and 29LT Azahar Display AL TN 
     'old_typewriter',
     'chat_terminal',
   ]);
-  assert.equal(ALL_STYLES_LIST.length, 39);
+  assert.equal(ALL_STYLES_LIST.length, 40);
 
   let includedCount = 0;
   let excludedCount = 0;
@@ -2027,7 +2035,7 @@ test('KOMission Black, Zain Rounded instance mob, and 29LT Azahar Display AL TN 
       }
     }
   }
-  assert.equal(includedCount, 36);
+  assert.equal(includedCount, 37);
   assert.equal(excludedCount, 3);
 
   // 3) Calibration profiles & preferred weights prevent faux-bolding and match fallbacks
@@ -7033,13 +7041,14 @@ test('Multiple Items ("عناصر متعددة") extension for Image & Video mod
   // 1) Registry & limits verification
   assert.equal(MAX_GALLERY_ITEMS, 8);
   assert.equal(MAX_GALLERY_VIDEOS, 4);
-  assert.equal(GALLERY_STYLES_LIST.length, 5);
+  assert.equal(GALLERY_STYLES_LIST.length, 6);
   const expectedGalleryStyles: GalleryStyleId[] = [
     'gal_float',
     'gal_orbit',
     'gal_polaroid',
     'gal_wall',
     'gal_bubbles',
+    'gal_circle',
   ];
   assert.deepEqual(
     GALLERY_STYLES_LIST.map((s) => s.id),
@@ -7049,8 +7058,8 @@ test('Multiple Items ("عناصر متعددة") extension for Image & Video mod
     assert.equal(st.recommendedBackground, 'green', `${st.id} must recommend green background`);
     assert.deepEqual(
       st.supportedBackgrounds,
-      ['style', 'green'],
-      `${st.id} must support only style & green (black Screen disabled)`
+      ['style', 'green', 'black'],
+      `${st.id} must support style, green, and black background modes`
     );
   }
 
@@ -7113,9 +7122,10 @@ test('Multiple Items ("عناصر متعددة") extension for Image & Video mod
       buildExportFileName(galOn, '1080p', 'mp4'),
       'gallery-gal_orbit-green-right-1080p.mp4'
     );
-    // Non-fullscreen box forces 'green' even if backgroundMode was requested as 'style'
+    // Non-fullscreen box supports style, green, and black backgrounds
     assert.equal(isGalleryBoxFullscreen(galOn), false);
-    assert.equal(resolveGalleryBackground({ ...galOn, backgroundMode: 'style' }), 'green');
+    assert.equal(resolveGalleryBackground({ ...galOn, backgroundMode: 'style' }), 'style');
+    assert.equal(resolveGalleryBackground({ ...galOn, backgroundMode: 'black' }), 'black');
     // Fullscreen box allows 'style' background
     const fullBoxCustom: StyleCustomization = {
       ...galOn,
@@ -7559,8 +7569,8 @@ test('Lifta Swash Fixed Regular and Palestine Regular are registered with Arabic
     assert.equal(authorEntry!.labelAr, labelAr);
   }
 
-  // 2) Included in all 39 styles without exception (including terminal/typewriter styles)
-  assert.equal(ALL_STYLES_LIST.length, 39);
+  // 2) Included in all 40 styles without exception (including terminal/typewriter styles)
+  assert.equal(ALL_STYLES_LIST.length, 40);
   for (const st of ALL_STYLES_LIST) {
     if (st.allowedFonts && st.allowedFonts.length > 0) {
       for (const { family } of expectedEntries) {
@@ -7688,6 +7698,629 @@ test('Lifta Swash Fixed Regular and Palestine Regular are registered with Arabic
         }, `renderQuoteFrame must succeed for ${styleId} (${format}) with ${family}`);
       }
     }
+  }
+});
+
+test('Gallery 6th style "دائرة دوّارة" (gal_circle): look, circular geometry, double orbit, continuous & step motion, focus highlight, Arabic hub captions with diacritics & multi-line keywords, green screen rules, filenames, events, and presets', () => {
+  // 1) Registry placement (6th & last card) and metadata
+  assert.equal(GALLERY_STYLES_LIST[GALLERY_STYLES_LIST.length - 1].id, 'gal_circle');
+  assert.equal(GAL_CIRCLE_CONFIG.id, 'gal_circle');
+  assert.equal(GAL_CIRCLE_CONFIG.nameAr, 'دائرة دوّارة');
+  assert.deepEqual(GAL_CIRCLE_CONFIG.supportedBackgrounds, ['style', 'green', 'black']);
+  assert.equal(GAL_CIRCLE_CONFIG.recommendedBackground, 'green');
+  assert.equal(CIRCLE_FOCUS_MAX_SCALE, 1.18);
+  assert.equal(CIRCLE_STEP_ROTATE_SEC, 0.9);
+  assert.equal(DEFAULT_GALLERY_CIRCLE_SPEED, 14);
+  assert.equal(DEFAULT_GALLERY_CIRCLE_RING_THICKNESS, 3);
+
+  // 2) Exact export filename format: gallery-circle-{bg}-{position}-{res}.mp4
+  const baseCircleCustom: StyleCustomization = {
+    mode: 'image',
+    styleId: 'gal_circle',
+    imageStyleId: 'img_polaroid',
+    videoStyleId: 'vid_floating',
+    galleryEnabled: true,
+    galleryStyleId: 'gal_circle',
+    galleryAppearance: 'stagger',
+    galleryInterval: 0.7,
+    galleryHighlightCurrent: true,
+    galleryFloatIntensity: 1.0,
+    galleryEndHold: 3.0,
+    galleryItemSfxType: 'pop',
+    galleryCircleMotionMode: 'continuous',
+    galleryCircleDirection: 'cw',
+    galleryCircleSpeed: 14,
+    galleryCircleFocusPosition: 'top',
+    galleryCircleShowTrack: true,
+    galleryCircleRingThickness: 3,
+    galleryCircleDoubleOrbit: false,
+    galleryCircleHubTitle: 'عنوان المركز الافتراضي',
+    format: '16:9',
+    position: 'center',
+    videoBox: { x: 18, y: 14, w: 64, h: 72 },
+    backgroundMode: 'green',
+    greenScreen: true,
+    accentColor: '#38BDF8',
+    keywordColor: '#FBBF24',
+    quoteFontOverride: 'Readex Pro',
+    authorFontOverride: 'Cairo',
+    fontSizeMultiplier: 1.0,
+    minimalShape: 'circle',
+    seed: 2026,
+  };
+
+  assert.equal(
+    buildExportFileName(baseCircleCustom, '1080p', 'mp4'),
+    'gallery-circle-green-center-1080p.mp4'
+  );
+  assert.equal(
+    buildExportFileName(
+      {
+        ...baseCircleCustom,
+        mode: 'video',
+        position: 'fullscreen',
+        videoBox: { x: 0, y: 0, w: 100, h: 100 },
+        backgroundMode: 'style',
+        greenScreen: false,
+      },
+      '1440p',
+      'mp4'
+    ),
+    'gallery-circle-style-fullscreen-1440p.mp4'
+  );
+  // Non-fullscreen supports style, green, and black backgrounds
+  assert.equal(
+    resolveGalleryBackground({ ...baseCircleCustom, backgroundMode: 'style' }),
+    'style'
+  );
+  assert.equal(
+    resolveGalleryBackground({ ...baseCircleCustom, backgroundMode: 'black' }),
+    'black'
+  );
+  // Other gallery styles keep their original filename format untouched
+  assert.equal(
+    buildExportFileName(
+      { ...baseCircleCustom, styleId: 'gal_float', galleryStyleId: 'gal_float' },
+      '1080p',
+      'mp4'
+    ),
+    'gallery-gal_float-green-center-1080p.mp4'
+  );
+
+  // 3) Mixed image + video items including transparent PNG, long diacritic captions, multi-line *keyword*, and no-caption item (for hub title fallback)
+  const mkMockDrawable = (w: number, h: number) =>
+    ({
+      width: w,
+      height: h,
+      naturalWidth: w,
+      naturalHeight: h,
+      getContext: () => ({ drawImage: () => {} }),
+    }) as unknown as HTMLCanvasElement;
+
+  const circleItems8: GalleryItemConfig[] = [
+    {
+      id: 'c1-png',
+      kind: 'image',
+      fileName: 'transparent-badge.png',
+      caption: 'مُقَدِّمَةٌ *تَفْصِيلِيَّةٌ مُتَعَدِّدَةُ السُّطُورِ وَالْكَلِمَاتِ* بِالتَّشْكِيلِ الْكَامِلِ',
+      fit: 'cover',
+      displayWidth: 800,
+      displayHeight: 800,
+    },
+    {
+      id: 'c2-video',
+      kind: 'video',
+      fileName: 'reel-clip.mp4',
+      caption: '', // intentionally empty to exercise hubTitle fallback
+      fit: 'cover',
+      displayWidth: 1080,
+      displayHeight: 1920,
+      duration: 6.0,
+      trimIn: 0.5,
+      trimOut: 5.5,
+      speed: 1.0,
+      audioEnabled: true,
+      audioVolume: 0.75,
+      endBehavior: 'loop',
+      hasAudio: true,
+    },
+    {
+      id: 'c3-wide',
+      kind: 'image',
+      fileName: 'wide-chart.jpg',
+      caption: 'تَحْلِيلُ *الأَدَاءِ الشَّامِلِ* لِعَامِ 2026',
+      fit: 'cover',
+      displayWidth: 2400,
+      displayHeight: 900,
+    },
+    {
+      id: 'c4-video-freeze',
+      kind: 'video',
+      fileName: 'clip-freeze.mp4',
+      caption: 'مَقْطَعُ *فِيدْيُو* يَتَوَقَّفُ عِنْدَ النِّهَايَةِ',
+      fit: 'cover',
+      displayWidth: 1920,
+      displayHeight: 1080,
+      duration: 3.0,
+      trimIn: 0,
+      trimOut: 3.0,
+      speed: 1.25,
+      audioEnabled: false,
+      audioVolume: 0.8,
+      endBehavior: 'freeze',
+      hasAudio: false,
+    },
+    {
+      id: 'c5-tall',
+      kind: 'image',
+      fileName: 'portrait.png',
+      caption: 'لَقْطَةٌ *عَمُودِيَّةٌ مُمَيَّزَةٌ* دَاخِلَ دَائِرَةٍ كَامِلَةٍ',
+      fit: 'cover',
+      displayWidth: 700,
+      displayHeight: 1600,
+    },
+    {
+      id: 'c6-video-3',
+      kind: 'video',
+      fileName: 'clip3.mp4',
+      caption: 'عَرْضٌ *مَرْئِيٌّ* مُتَزَامِنٌ',
+      fit: 'cover',
+      displayWidth: 1280,
+      displayHeight: 720,
+      duration: 4.5,
+      trimIn: 0,
+      trimOut: 4.5,
+      speed: 1.0,
+      audioEnabled: false,
+      audioVolume: 0.6,
+      endBehavior: 'loop',
+      hasAudio: true,
+    },
+    {
+      id: 'c7-img',
+      kind: 'image',
+      fileName: 'card7.jpg',
+      caption: 'العُنْصُرُ *السَّابِعُ* فِي المَدَارِ',
+      fit: 'cover',
+      displayWidth: 1200,
+      displayHeight: 900,
+    },
+    {
+      id: 'c8-img',
+      kind: 'image',
+      fileName: 'card8.png',
+      caption: 'خِتَامُ *الدَّائِرَةِ الدَّوَّارَةِ* بِجَوْدَةٍ عَالِيَةٍ',
+      fit: 'cover',
+      displayWidth: 1000,
+      displayHeight: 1000,
+    },
+  ];
+
+  const circleMediaMap: Record<string, GalleryRuntimeMediaEntry> = {};
+  for (const it of circleItems8) {
+    const w = it.displayWidth || 1000;
+    const h = it.displayHeight || 1000;
+    circleMediaMap[it.id] = {
+      id: it.id,
+      kind: it.kind,
+      poster: mkMockDrawable(w, h),
+      displayWidth: w,
+      displayHeight: h,
+      greenPixelRatio: 0.01,
+    };
+  }
+
+  // 4) Geometry & non-overlap verification for n = 1, 2, 3, 5, 8 across small / medium / fullscreen in 16:9 & 9:16
+  const testCounts = [1, 2, 3, 5, 8];
+  const testBoxes = [
+    { name: 'small', pos: 'top-right' as const, box: { x: 66, y: 10, w: 28, h: 34 } },
+    { name: 'medium', pos: 'center' as const, box: { x: 18, y: 14, w: 64, h: 72 } },
+    { name: 'fullscreen', pos: 'fullscreen' as const, box: { x: 0, y: 0, w: 100, h: 100 } },
+  ];
+
+  for (const format of ['16:9', '9:16'] as const) {
+    const size = getRenderSize(format, '1080p');
+    for (const bSpec of testBoxes) {
+      const boxPx = resolveGalleryBoxPixels(
+        { ...baseCircleCustom, format, position: bSpec.pos, videoBox: bSpec.box },
+        size
+      );
+
+      for (const n of testCounts) {
+        for (const reqDouble of [false, true]) {
+          const geom = computeCircleGalleryGeometry({
+            itemCount: n,
+            boxX: boxPx.boxX,
+            boxY: boxPx.boxY,
+            boxWidth: boxPx.boxWidth,
+            boxHeight: boxPx.boxHeight,
+            highlightEnabled: true,
+            doubleOrbit: reqDouble,
+            ringThickness: 3,
+            isGreen: bSpec.name !== 'fullscreen',
+          });
+
+          // Double orbit ONLY active when requested AND n >= 5
+          assert.equal(
+            geom.isDoubleOrbit,
+            reqDouble && n >= 5,
+            `isDoubleOrbit mismatch for n=${n}, req=${reqDouble}`
+          );
+
+          if (n === 1) {
+            assert.equal(geom.outerTrackRadius, 0);
+            assert.ok(geom.decorTrackRadius > geom.outerItemRadius * geom.focusMaxScale);
+          } else if (!geom.isDoubleOrbit) {
+            // Diameter never exceeds formula d = min(0.38*R, 0.8*2*pi*R/n)
+            const specMaxD = Math.min(
+              0.38 * geom.outerTrackRadius,
+              (0.8 * Math.PI * 2 * geom.outerTrackRadius) / n
+            );
+            assert.ok(
+              geom.outerItemDiameter <= specMaxD + 0.05,
+              `n=${n} diameter ${geom.outerItemDiameter} exceeded spec ${specMaxD}`
+            );
+          } else {
+            // Double orbit: outer & inner rings radially separated with zero overlap
+            const radialClearance =
+              geom.outerTrackRadius -
+              geom.outerItemRadius * geom.focusMaxScale -
+              (geom.innerTrackRadius + geom.innerItemRadius * geom.focusMaxScale);
+            assert.ok(
+              radialClearance >= 2,
+              `Double orbit rings overlap (${format}/${bSpec.name}/n=${n}, clearance=${radialClearance})`
+            );
+          }
+
+          // Sample settled state and check zero item-item overlap and strict box containment
+          const subset = circleItems8.slice(0, n);
+          const custom: StyleCustomization = {
+            ...baseCircleCustom,
+            format,
+            position: bSpec.pos,
+            videoBox: bSpec.box,
+            galleryItems: subset,
+            galleryCircleDoubleOrbit: reqDouble,
+            backgroundMode: bSpec.name === 'fullscreen' ? 'style' : 'green',
+            greenScreen: bSpec.name !== 'fullscreen',
+          };
+          const sched = computeGallerySchedule({
+            itemCount: n,
+            appearance: custom.galleryAppearance,
+            interval: custom.galleryInterval,
+            endHold: custom.galleryEndHold,
+          });
+          const settledT = sched.lastAppearEnd + 0.6;
+          const stA = sampleCircleGalleryState({
+            items: subset,
+            t: settledT,
+            custom,
+            boxX: boxPx.boxX,
+            boxY: boxPx.boxY,
+            boxWidth: boxPx.boxWidth,
+            boxHeight: boxPx.boxHeight,
+            isGreen: bSpec.name !== 'fullscreen',
+          });
+          const stB = sampleCircleGalleryState({
+            items: subset,
+            t: settledT,
+            custom,
+            boxX: boxPx.boxX,
+            boxY: boxPx.boxY,
+            boxWidth: boxPx.boxWidth,
+            boxHeight: boxPx.boxHeight,
+            isGreen: bSpec.name !== 'fullscreen',
+          });
+          assert.deepEqual(stA, stB, 'sampleCircleGalleryState must be strictly deterministic');
+          assert.equal(stA.items.length, n);
+
+          // Strict box containment
+          for (const it of stA.items) {
+            const effR = it.radius * it.scale;
+            assert.ok(
+              it.x - effR >= boxPx.boxX - 1.5,
+              `Left cutoff (${format}/${bSpec.name}/n=${n}/dbl=${reqDouble})`
+            );
+            assert.ok(
+              it.x + effR <= boxPx.boxX + boxPx.boxWidth + 1.5,
+              `Right cutoff (${format}/${bSpec.name}/n=${n}/dbl=${reqDouble})`
+            );
+            assert.ok(
+              it.y - effR >= boxPx.boxY - 1.5,
+              `Top cutoff (${format}/${bSpec.name}/n=${n}/dbl=${reqDouble})`
+            );
+            assert.ok(
+              it.y + effR <= boxPx.boxY + boxPx.boxHeight + 1.5,
+              `Bottom cutoff (${format}/${bSpec.name}/n=${n}/dbl=${reqDouble})`
+            );
+          }
+
+          // Zero neighbor overlap
+          for (let i = 0; i < stA.items.length; i++) {
+            for (let j = i + 1; j < stA.items.length; j++) {
+              const a = stA.items[i];
+              const b = stA.items[j];
+              const dist = Math.hypot(a.x - b.x, a.y - b.y);
+              const minDist = a.radius * a.scale + b.radius * b.scale;
+              assert.ok(
+                dist >= minDist - 0.5,
+                `Items ${i} & ${j} overlapped (${format}/${bSpec.name}/n=${n}/dbl=${reqDouble}: dist=${dist.toFixed(1)} < ${minDist.toFixed(1)})`
+              );
+            }
+          }
+
+          // With n === 2, items must sit directly opposite each other (distance === 2 * R)
+          if (n === 2) {
+            const dist2 = Math.hypot(
+              stA.items[0].x - stA.items[1].x,
+              stA.items[0].y - stA.items[1].y
+            );
+            assert.ok(
+              Math.abs(dist2 - 2 * stA.geometry.outerTrackRadius) < 1.0,
+              `2 items must sit directly opposite each other (dist=${dist2}, expected=${2 * stA.geometry.outerTrackRadius})`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // 5) Motion modes (continuous cw/ccw + step), 4 focus positions, double-orbit opposite rotation, smooth no-stutter trajectory, and highlight toggle
+  const motionBox = { boxX: 240, boxY: 80, boxWidth: 1440, boxHeight: 920 };
+  const items5 = circleItems8.slice(0, 5);
+  const sched5 = computeGallerySchedule({
+    itemCount: 5,
+    appearance: 'together',
+    interval: 0.8,
+    endHold: 6.0,
+  });
+
+  // Continuous CW vs CCW & double-orbit opposite direction check
+  const cwCustom: StyleCustomization = {
+    ...baseCircleCustom,
+    galleryItems: items5,
+    galleryAppearance: 'together',
+    galleryInterval: 0.8,
+    galleryEndHold: 6.0,
+    galleryCircleMotionMode: 'continuous',
+    galleryCircleDirection: 'cw',
+    galleryCircleSpeed: 24,
+    galleryCircleDoubleOrbit: true,
+  };
+  const stT1 = sampleCircleGalleryState({
+    items: items5,
+    t: 2.0,
+    custom: cwCustom,
+    ...motionBox,
+    isGreen: false,
+  });
+  const stT2 = sampleCircleGalleryState({
+    items: items5,
+    t: 3.0,
+    custom: cwCustom,
+    ...motionBox,
+    isGreen: false,
+  });
+  // Outer item (index 0) moves clockwise (+angle), inner item (index 1) moves counter-clockwise (-angle)
+  assert.ok(stT2.items[0].theta > stT1.items[0].theta, 'Outer ring must rotate CW (+theta)');
+  assert.ok(
+    stT2.items[1].theta < stT1.items[1].theta,
+    'Inner ring in double orbit must rotate opposite to outer ring (-theta)'
+  );
+
+  // Smoothness check (no sudden position jumps / stutter across 30fps steps in both continuous & step modes)
+  for (const motionMode of ['continuous', 'step'] as const) {
+    const smoothCustom: StyleCustomization = {
+      ...cwCustom,
+      galleryCircleMotionMode: motionMode,
+      galleryCircleDoubleOrbit: false,
+    };
+    let prev = sampleCircleGalleryState({
+      items: items5,
+      t: sched5.lastAppearEnd + 0.1,
+      custom: smoothCustom,
+      ...motionBox,
+      isGreen: false,
+    });
+    const rTrack = prev.geometry.outerTrackRadius;
+    const maxStepPx =
+      motionMode === 'step'
+        ? (rTrack * 3.0 * ((Math.PI * 2) / items5.length)) / (CIRCLE_STEP_ROTATE_SEC * 30) + 4
+        : (rTrack * ((24 * Math.PI) / 180)) / 30 + 4;
+    let prevDx: number[] | null = null;
+    let prevDy: number[] | null = null;
+    for (let step = 1; step <= 60; step++) {
+      const t = sched5.lastAppearEnd + 0.1 + step / 30;
+      const cur = sampleCircleGalleryState({
+        items: items5,
+        t,
+        custom: smoothCustom,
+        ...motionBox,
+        isGreen: false,
+      });
+      const curDx: number[] = [];
+      const curDy: number[] = [];
+      for (let idx = 0; idx < items5.length; idx++) {
+        const dx = cur.items[idx].x - prev.items[idx].x;
+        const dy = cur.items[idx].y - prev.items[idx].y;
+        curDx.push(dx);
+        curDy.push(dy);
+        const jump = Math.hypot(dx, dy);
+        assert.ok(
+          jump <= maxStepPx,
+          `Unexpected motion jump in ${motionMode} mode at t=${t.toFixed(2)}: jump=${jump.toFixed(1)}px > ${maxStepPx.toFixed(1)}px`
+        );
+        if (prevDx && prevDy) {
+          const accel = Math.hypot(dx - prevDx[idx], dy - prevDy[idx]);
+          assert.ok(
+            accel <= 14,
+            `Unexpected motion stutter (acceleration spike) in ${motionMode} mode at t=${t.toFixed(2)}: accel=${accel.toFixed(1)}px`
+          );
+        }
+      }
+      prevDx = curDx;
+      prevDy = curDy;
+      prev = cur;
+    }
+  }
+
+  // Focus position check across all 4 positions (top, right, left, bottom) at t just after step 0 settles
+  for (const focusPos of ['top', 'right', 'left', 'bottom'] as const) {
+    const posCustom: StyleCustomization = {
+      ...cwCustom,
+      galleryCircleMotionMode: 'step',
+      galleryCircleFocusPosition: focusPos,
+      galleryCircleDoubleOrbit: false,
+    };
+    const st = sampleCircleGalleryState({
+      items: items5,
+      t: sched5.lastAppearEnd + 0.1,
+      custom: posCustom,
+      ...motionBox,
+      isGreen: false,
+    });
+    const expectedAngle = getFocusAngleRad(focusPos);
+    assert.equal(st.focusedIndex, 0);
+    assert.ok(
+      Math.abs(st.items[0].theta - expectedAngle) < 0.05,
+      `Item 0 should start aligned to focus position ${focusPos}`
+    );
+    assert.ok(st.items[0].scale > 1.15 && st.items[0].scale <= 1.181);
+    assert.ok(st.items[2].alpha <= 0.72);
+  }
+
+  // Highlight OFF disables scaling and dimming
+  const noHiSt = sampleCircleGalleryState({
+    items: items5,
+    t: sched5.lastAppearEnd + 0.2,
+    custom: { ...cwCustom, galleryHighlightCurrent: false, galleryCircleDoubleOrbit: false },
+    ...motionBox,
+    isGreen: false,
+  });
+  for (const it of noHiSt.items) {
+    assert.ok(Math.abs(it.scale - 1.0) < 0.01, 'Highlight OFF must keep item scale at 1.0');
+    assert.ok(Math.abs(it.alpha - 1.0) < 0.01, 'Highlight OFF must keep item alpha at 1.0');
+  }
+
+  // 6) Full renderQuoteFrame + style/green/black rules + Arabic character-join safety + hubTitle fallback + getSceneEventTimes
+  for (const bg of ['style', 'green', 'black'] as const) {
+    const size = getRenderSize('16:9', '1080p');
+    let maxBlur = 0;
+    let curBlur = 0;
+    const fillTexts: string[] = [];
+    const strokeTexts: string[] = [];
+    const fillStylesUsed: string[] = [];
+    const ctx = createMockCanvasContextForChat();
+    const origFillText = ctx.fillText.bind(ctx);
+    const origStrokeText = ctx.strokeText.bind(ctx);
+    const origFillRect = ctx.fillRect.bind(ctx);
+    ctx.fillText = (text: string, x: number, y: number, maxWidth?: number) => {
+      fillTexts.push(String(text));
+      return origFillText(text, x, y, maxWidth);
+    };
+    ctx.strokeText = (text: string, x: number, y: number, maxWidth?: number) => {
+      strokeTexts.push(String(text));
+      return origStrokeText(text, x, y, maxWidth);
+    };
+    ctx.fillRect = (x: number, y: number, w: number, h: number) => {
+      if (typeof ctx.fillStyle === 'string') fillStylesUsed.push(ctx.fillStyle);
+      return origFillRect(x, y, w, h);
+    };
+    Object.defineProperty(ctx, 'shadowBlur', {
+      get: () => curBlur,
+      set: (v: number) => {
+        curBlur = v;
+        if (v > maxBlur) maxBlur = v;
+      },
+      configurable: true,
+    });
+
+    const renderCustom: StyleCustomization = {
+      ...baseCircleCustom,
+      position: 'fullscreen',
+      videoBox: { x: 0, y: 0, w: 100, h: 100 },
+      backgroundMode: bg,
+      greenScreen: bg === 'green',
+      galleryItems: circleItems8,
+      galleryCircleMotionMode: 'step',
+      galleryCircleDoubleOrbit: true,
+      galleryCircleHubTitle: 'عنوان المركز الاحتياطي',
+    };
+    const contentObj: QuoteContent = {
+      quoteText: '',
+      authorName: '',
+      subtitle: '',
+      photoSource: null,
+      photoId: 'default',
+      crop: { zoom: 1, offsetX: 0, offsetY: 0 },
+      quotationMarks: 'none',
+      galleryItems: circleItems8,
+      galleryMedia: circleMediaMap,
+    };
+
+    const events = getSceneEventTimes(ctx, contentObj, DEFAULT_IMAGE_TIMELINE, renderCustom, size);
+    assert.equal(events.enterStart, 0.04);
+    assert.equal(events.itemTimes?.length, 8);
+    assert.ok(events.keywordTimes.length >= 1);
+
+    const sched8 = computeGallerySchedule({
+      itemCount: 8,
+      appearance: renderCustom.galleryAppearance,
+      interval: renderCustom.galleryInterval,
+      endHold: renderCustom.galleryEndHold,
+    });
+    // Render entrance, item 0 focused (long diacritic + multi-line keyword), item 1 focused (empty caption -> hubTitle fallback), and exit
+    for (const sampleT of [
+      0.85,
+      sched8.lastAppearEnd + 0.15,
+      sched8.lastAppearEnd + renderCustom.galleryInterval! + CIRCLE_STEP_ROTATE_SEC + 0.15,
+      sched8.total - 0.15,
+    ]) {
+      renderQuoteFrame(ctx, sampleT, contentObj, DEFAULT_IMAGE_TIMELINE, renderCustom, size);
+    }
+
+    if (bg === 'green') {
+      assert.equal(maxBlur, 0, 'gal_circle green mode must have shadowBlur === 0');
+      assert.ok(
+        fillStylesUsed.some((s) => s.toUpperCase() === '#00FF00'),
+        'gal_circle green mode must fill flat #00FF00 background'
+      );
+      assert.ok(
+        strokeTexts.length > 0,
+        'gal_circle green mode must draw hard dark outline on hub caption'
+      );
+    }
+
+    // Verify Arabic hub text was drawn and NEVER split into single characters
+    const arabicDrawn = fillTexts.filter((t) => /[\u0600-\u06FF]/.test(t));
+    assert.ok(arabicDrawn.length > 0, 'Hub caption must render Arabic words');
+    for (const txt of arabicDrawn) {
+      assert.ok(
+        txt.trim().length > 1,
+        `gal_circle Arabic text must never split into single characters (got "${txt}")`
+      );
+    }
+  }
+
+  // 7) Preset & JSON round-trip preserves all 8 gal_circle settings and never stores File/objectUrl
+  const circlePreset = {
+    galleryEnabled: true,
+    galleryStyleId: 'gal_circle' as GalleryStyleId,
+    galleryCircleMotionMode: 'step' as const,
+    galleryCircleDirection: 'ccw' as const,
+    galleryCircleSpeed: 28,
+    galleryCircleFocusPosition: 'left' as const,
+    galleryCircleShowTrack: false,
+    galleryCircleRingThickness: 6,
+    galleryCircleDoubleOrbit: true,
+    galleryCircleHubTitle: 'ألبوم العرض الدائري',
+    galleryItems: circleItems8.slice(0, 5),
+  };
+  const roundTripped = JSON.parse(JSON.stringify(circlePreset));
+  assert.deepEqual(roundTripped, circlePreset);
+  for (const item of roundTripped.galleryItems) {
+    assert.equal('file' in item, false);
+    assert.equal('objectUrl' in item, false);
   }
 });
 

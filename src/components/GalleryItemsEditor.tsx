@@ -17,15 +17,32 @@ import {
 } from 'lucide-react';
 import {
   computeGallerySchedule,
+  DEFAULT_GALLERY_CIRCLE_DIRECTION,
+  DEFAULT_GALLERY_CIRCLE_DOUBLE_ORBIT,
+  DEFAULT_GALLERY_CIRCLE_FOCUS_POSITION,
+  DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
+  DEFAULT_GALLERY_CIRCLE_MOTION_MODE,
+  DEFAULT_GALLERY_CIRCLE_RING_THICKNESS,
+  DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+  DEFAULT_GALLERY_CIRCLE_SPEED,
   DEFAULT_GALLERY_END_HOLD,
   DEFAULT_GALLERY_FLOAT_INTENSITY,
   DEFAULT_GALLERY_INTERVAL,
   getGalleryDemoPosterCanvas,
   MAX_GALLERY_ITEMS,
   MAX_GALLERY_VIDEOS,
+  resolveCircleDirection,
+  resolveCircleFocusPosition,
+  resolveCircleMotionMode,
+  resolveCircleRingThickness,
+  resolveCircleSpeed,
+  resolveGalleryStyleId,
 } from '../styles';
 import {
   GalleryAppearanceMode,
+  GalleryCircleDirection,
+  GalleryCircleFocusPosition,
+  GalleryCircleMotionMode,
   GalleryItemConfig,
   GalleryRuntimeMediaEntry,
   ImageFitMode,
@@ -640,6 +657,32 @@ export const GalleryGlobalTimingControls: React.FC<GalleryGlobalTimingControlsPr
     8.0
   );
   const highlightCurrent = customization.galleryHighlightCurrent !== false;
+  const activeGalStyle = resolveGalleryStyleId(
+    customization.galleryStyleId || customization.styleId
+  );
+  const isCircleStyle = activeGalStyle === 'gal_circle';
+  const circleMotionMode = resolveCircleMotionMode(
+    customization.galleryCircleMotionMode ?? DEFAULT_GALLERY_CIRCLE_MOTION_MODE
+  );
+  const circleDirection = resolveCircleDirection(
+    customization.galleryCircleDirection ?? DEFAULT_GALLERY_CIRCLE_DIRECTION
+  );
+  const circleSpeed = resolveCircleSpeed(
+    customization.galleryCircleSpeed ?? DEFAULT_GALLERY_CIRCLE_SPEED
+  );
+  const circleFocusPosition = resolveCircleFocusPosition(
+    customization.galleryCircleFocusPosition ?? DEFAULT_GALLERY_CIRCLE_FOCUS_POSITION
+  );
+  const circleShowTrack =
+    customization.galleryCircleShowTrack ?? DEFAULT_GALLERY_CIRCLE_SHOW_TRACK;
+  const circleRingThickness = resolveCircleRingThickness(
+    customization.galleryCircleRingThickness ?? DEFAULT_GALLERY_CIRCLE_RING_THICKNESS
+  );
+  const circleDoubleOrbit =
+    customization.galleryCircleDoubleOrbit ?? DEFAULT_GALLERY_CIRCLE_DOUBLE_ORBIT;
+  const circleHubTitle =
+    customization.galleryCircleHubTitle ?? DEFAULT_GALLERY_CIRCLE_HUB_TITLE;
+  const canDoubleOrbit = itemCount >= 5;
 
   const schedule = computeGallerySchedule({
     itemCount,
@@ -682,11 +725,13 @@ export const GalleryGlobalTimingControls: React.FC<GalleryGlobalTimingControlsPr
       </div>
 
       {/* Interval Slider (0.3 - 2.0 s) */}
-      {appearance === 'stagger' && (
+      {(appearance === 'stagger' || (isCircleStyle && circleMotionMode === 'step')) && (
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
             <label htmlFor="gallery-interval-slider" className="text-slate-300 font-medium">
-              الفاصل الزمني بين العناصر
+              {isCircleStyle && circleMotionMode === 'step'
+                ? 'الفاصل الزمني / وقفة كل خطوة'
+                : 'الفاصل الزمني بين العناصر'}
             </label>
             <span className="font-mono-tabular text-sky-400 font-semibold">
               {interval.toFixed(1)} ثانية
@@ -718,7 +763,9 @@ export const GalleryGlobalTimingControls: React.FC<GalleryGlobalTimingControlsPr
             تمييز العنصر الحالي
           </span>
           <span className="block text-[10px] text-slate-400">
-            تكبير العنصر النشط (1.08×) وإبرازه وتعتيم البقية إلى ~70%
+            {isCircleStyle
+              ? 'تكبير العنصر الأقرب لموضع التركيز (1.18×) وإبرازه وتعتيم البقية إلى ~70%'
+              : 'تكبير العنصر النشط (1.08×) وإبرازه وتعتيم البقية إلى ~70%'}
           </span>
         </div>
         <input
@@ -735,33 +782,280 @@ export const GalleryGlobalTimingControls: React.FC<GalleryGlobalTimingControlsPr
         />
       </label>
 
-      {/* Float Intensity Slider (0 - 1.5, default 1.0) */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs">
-          <label htmlFor="gallery-float-slider" className="text-slate-300 font-medium">
-            شدة الطفو والتمايل (Float)
+      {/* Dedicated Rotating Circle ("دائرة دوّارة") Controls */}
+      {isCircleStyle && (
+        <div
+          className="rounded-xl border border-sky-500/25 bg-slate-950/80 p-3 space-y-3"
+          data-testid="gallery-circle-controls"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-sky-300">إعدادات الدائرة الدوّارة</span>
+            <span className="text-[10px] text-slate-400">
+              {circleMotionMode === 'continuous' ? 'دوران مستمر' : 'خطوة خطوة'}
+            </span>
+          </div>
+
+          {/* Motion Mode Selector */}
+          <div className="space-y-1.5">
+            <span className="block text-[11px] font-semibold text-slate-300">نمط الحركة</span>
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-lg">
+              {(
+                [
+                  { id: 'continuous' as GalleryCircleMotionMode, label: 'دوران مستمر' },
+                  { id: 'step' as GalleryCircleMotionMode, label: 'خطوة خطوة' },
+                ]
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  data-testid={`gallery-circle-motion-${opt.id}`}
+                  onClick={() =>
+                    setCustomization((c) => ({
+                      ...c,
+                      galleryCircleMotionMode: opt.id,
+                    }))
+                  }
+                  className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-colors ${
+                    circleMotionMode === opt.id
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Direction Selector */}
+          <div className="space-y-1.5">
+            <span className="block text-[11px] font-semibold text-slate-300">اتجاه الدوران</span>
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-lg">
+              {(
+                [
+                  { id: 'cw' as GalleryCircleDirection, label: 'عقارب الساعة' },
+                  { id: 'ccw' as GalleryCircleDirection, label: 'عكسها' },
+                ]
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  data-testid={`gallery-circle-dir-${opt.id}`}
+                  onClick={() =>
+                    setCustomization((c) => ({
+                      ...c,
+                      galleryCircleDirection: opt.id,
+                    }))
+                  }
+                  className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-colors ${
+                    circleDirection === opt.id
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Speed Slider (4-40 deg/s, default 14) */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-[11px]">
+              <label htmlFor="gallery-circle-speed-slider" className="text-slate-300 font-medium">
+                سرعة الدوران
+              </label>
+              <span className="font-mono-tabular text-sky-400 font-semibold">
+                {Math.round(circleSpeed)}°/ث
+              </span>
+            </div>
+            <input
+              id="gallery-circle-speed-slider"
+              data-testid="gallery-circle-speed-slider"
+              type="range"
+              min={4}
+              max={40}
+              step={1}
+              value={circleSpeed}
+              onChange={(e) =>
+                setCustomization((c) => ({
+                  ...c,
+                  galleryCircleSpeed: parseFloat(e.target.value),
+                }))
+              }
+              className="w-full accent-sky-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+            />
+          </div>
+
+          {/* Focus Position (أعلى / يمين / يسار / أسفل) */}
+          <div className="space-y-1.5">
+            <span className="block text-[11px] font-semibold text-slate-300">موضع التركيز</span>
+            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-900 border border-slate-800 rounded-lg">
+              {(
+                [
+                  { id: 'top' as GalleryCircleFocusPosition, label: 'أعلى' },
+                  { id: 'right' as GalleryCircleFocusPosition, label: 'يمين' },
+                  { id: 'left' as GalleryCircleFocusPosition, label: 'يسار' },
+                  { id: 'bottom' as GalleryCircleFocusPosition, label: 'أسفل' },
+                ]
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  data-testid={`gallery-circle-focus-${opt.id}`}
+                  onClick={() =>
+                    setCustomization((c) => ({
+                      ...c,
+                      galleryCircleFocusPosition: opt.id,
+                    }))
+                  }
+                  className={`py-1.5 px-1.5 rounded-md text-[11px] font-semibold transition-colors ${
+                    circleFocusPosition === opt.id
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Ring Thickness Slider (1-8 px) */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-[11px]">
+              <label htmlFor="gallery-circle-thickness-slider" className="text-slate-300 font-medium">
+                سماكة الإطار الدائري
+              </label>
+              <span className="font-mono-tabular text-sky-400 font-semibold">
+                {circleRingThickness.toFixed(1)} px
+              </span>
+            </div>
+            <input
+              id="gallery-circle-thickness-slider"
+              data-testid="gallery-circle-thickness-slider"
+              type="range"
+              min={1}
+              max={8}
+              step={0.5}
+              value={circleRingThickness}
+              onChange={(e) =>
+                setCustomization((c) => ({
+                  ...c,
+                  galleryCircleRingThickness: parseFloat(e.target.value),
+                }))
+              }
+              className="w-full accent-sky-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+            />
+          </div>
+
+          {/* Track Visibility Toggle */}
+          <label className="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-2 cursor-pointer">
+            <span className="text-[11px] font-semibold text-slate-200">
+              إظهار المسار الدائري
+            </span>
+            <input
+              type="checkbox"
+              data-testid="gallery-circle-track-checkbox"
+              checked={circleShowTrack}
+              onChange={(e) =>
+                setCustomization((c) => ({
+                  ...c,
+                  galleryCircleShowTrack: e.target.checked,
+                }))
+              }
+              className="rounded accent-sky-400 w-4 h-4 shrink-0"
+            />
           </label>
-          <span className="font-mono-tabular text-sky-400 font-semibold">
-            {floatIntensity.toFixed(2)}×
-          </span>
+
+          {/* Double Orbit Toggle (only when items >= 5) */}
+          <label
+            className={`flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-2 ${
+              canDoubleOrbit ? 'cursor-pointer' : 'opacity-55 cursor-not-allowed'
+            }`}
+            title={canDoubleOrbit ? undefined : 'يتفعّل خيار مدارين عند وجود 5 عناصر فأكثر'}
+          >
+            <div>
+              <span className="block text-[11px] font-semibold text-slate-200">
+                مدارين (خارجي وداخلي متعاكسان)
+              </span>
+              <span className="block text-[10px] text-slate-400">
+                {canDoubleOrbit
+                  ? 'توزيع العناصر بالتناوب على مدارين يدوران بعكس بعضهما'
+                  : 'يتفعّل تلقائياً عند إضافة 5 عناصر فأكثر'}
+              </span>
+            </div>
+            <input
+              type="checkbox"
+              data-testid="gallery-circle-double-orbit-checkbox"
+              disabled={!canDoubleOrbit}
+              checked={canDoubleOrbit && circleDoubleOrbit}
+              onChange={(e) =>
+                setCustomization((c) => ({
+                  ...c,
+                  galleryCircleDoubleOrbit: e.target.checked,
+                }))
+              }
+              className="rounded accent-sky-400 w-4 h-4 shrink-0"
+            />
+          </label>
+
+          {/* Optional Hub Title Field */}
+          <div className="space-y-1">
+            <label
+              htmlFor="gallery-circle-hub-title"
+              className="block text-[11px] font-semibold text-slate-300"
+            >
+              عنوان المركز (اختياري — يظهر عند عدم وجود تعليق للعنصر)
+            </label>
+            <input
+              id="gallery-circle-hub-title"
+              data-testid="gallery-circle-hub-title"
+              type="text"
+              dir="auto"
+              value={circleHubTitle}
+              placeholder="مثال: رحلة *الابتكار*..."
+              onChange={(e) =>
+                setCustomization((c) => ({
+                  ...c,
+                  galleryCircleHubTitle: e.target.value,
+                }))
+              }
+              className="w-full rounded-lg bg-slate-900 border border-slate-700/80 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400"
+            />
+          </div>
         </div>
-        <input
-          id="gallery-float-slider"
-          data-testid="gallery-float-slider"
-          type="range"
-          min={0}
-          max={1.5}
-          step={0.05}
-          value={floatIntensity}
-          onChange={(e) =>
-            setCustomization((c) => ({
-              ...c,
-              galleryFloatIntensity: parseFloat(e.target.value),
-            }))
-          }
-          className="w-full accent-sky-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
-        />
-      </div>
+      )}
+
+      {/* Float Intensity Slider (0 - 1.5, default 1.0) */}
+      {!isCircleStyle && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <label htmlFor="gallery-float-slider" className="text-slate-300 font-medium">
+              شدة الطفو والتمايل (Float)
+            </label>
+            <span className="font-mono-tabular text-sky-400 font-semibold">
+              {floatIntensity.toFixed(2)}×
+            </span>
+          </div>
+          <input
+            id="gallery-float-slider"
+            data-testid="gallery-float-slider"
+            type="range"
+            min={0}
+            max={1.5}
+            step={0.05}
+            value={floatIntensity}
+            onChange={(e) =>
+              setCustomization((c) => ({
+                ...c,
+                galleryFloatIntensity: parseFloat(e.target.value),
+              }))
+            }
+            className="w-full accent-sky-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+          />
+        </div>
+      )}
 
       {/* End Hold Slider (1 - 8 s, default 3 s) */}
       <div className="space-y-1">

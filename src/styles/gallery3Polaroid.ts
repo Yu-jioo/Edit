@@ -37,7 +37,7 @@ export const GAL_POLAROID_CONFIG: StyleMetadata = {
   defaultAuthorFont: 'Katibeh',
   defaultEnglishQuoteFont: 'Special Elite',
   defaultEnglishAuthorFont: 'Lora',
-  supportedBackgrounds: ['style', 'green'],
+  supportedBackgrounds: ['style', 'green', 'black'],
   recommendedBackground: 'green',
 };
 
@@ -88,6 +88,9 @@ export function renderGalPolaroid(
 
   if (isGreen) {
     ctx.fillStyle = '#00FF00';
+    ctx.fillRect(0, 0, W, H);
+  } else if (bgMode === 'black') {
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
   } else {
     const wall = getCachedWarmWallBackground(W, H, custom.seed);

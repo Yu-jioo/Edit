@@ -37,7 +37,7 @@ export const GAL_BUBBLES_CONFIG: StyleMetadata = {
   defaultAuthorFont: 'Tajawal',
   defaultEnglishQuoteFont: 'Outfit',
   defaultEnglishAuthorFont: 'Plus Jakarta Sans',
-  supportedBackgrounds: ['style', 'green'],
+  supportedBackgrounds: ['style', 'green', 'black'],
   recommendedBackground: 'green',
 };
 
@@ -128,6 +128,9 @@ export function renderGalBubbles(
 
   if (isGreen) {
     ctx.fillStyle = '#00FF00';
+    ctx.fillRect(0, 0, W, H);
+  } else if (bgMode === 'black') {
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
   } else {
     const bgCanvas = getCachedAquaVioletBackground(W, H, custom.seed);

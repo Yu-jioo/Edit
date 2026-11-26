@@ -38,7 +38,7 @@ export const GAL_FLOAT_CONFIG: StyleMetadata = {
   defaultAuthorFont: 'Tajawal',
   defaultEnglishQuoteFont: 'Plus Jakarta Sans',
   defaultEnglishAuthorFont: 'Outfit',
-  supportedBackgrounds: ['style', 'green'],
+  supportedBackgrounds: ['style', 'green', 'black'],
   recommendedBackground: 'green',
 };
 
@@ -96,6 +96,9 @@ export function renderGalFloat(
 
   if (isGreen) {
     ctx.fillStyle = '#00FF00';
+    ctx.fillRect(0, 0, W, H);
+  } else if (bgMode === 'black') {
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
   } else {
     const bgCanvas = getCachedPastelBackground(W, H, custom.seed, accentColor);

@@ -239,6 +239,29 @@ import {
   renderGalBubbles,
 } from './gallery5Bubbles';
 import {
+  CIRCLE_FOCUS_MAX_SCALE,
+  CIRCLE_STEP_ROTATE_SEC,
+  computeCircleGalleryGeometry,
+  DEFAULT_GALLERY_CIRCLE_DIRECTION,
+  DEFAULT_GALLERY_CIRCLE_DOUBLE_ORBIT,
+  DEFAULT_GALLERY_CIRCLE_FOCUS_POSITION,
+  DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
+  DEFAULT_GALLERY_CIRCLE_MOTION_MODE,
+  DEFAULT_GALLERY_CIRCLE_RING_THICKNESS,
+  DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+  DEFAULT_GALLERY_CIRCLE_SPEED,
+  GAL_CIRCLE_CONFIG,
+  getFocusAngleRad,
+  getGalCircleEventTimes,
+  renderGalCircle,
+  resolveCircleDirection,
+  resolveCircleFocusPosition,
+  resolveCircleMotionMode,
+  resolveCircleRingThickness,
+  resolveCircleSpeed,
+  sampleCircleGalleryState,
+} from './gallery6Circle';
+import {
   computeDrawableGreenRatio,
   computeGalleryFocusWeights,
   computeGalleryLayout,
@@ -321,6 +344,25 @@ export {
   resolveGalleryBoxPixels,
   resolveGalleryStyleId,
   sampleGalleryItemMotion,
+  CIRCLE_FOCUS_MAX_SCALE,
+  CIRCLE_STEP_ROTATE_SEC,
+  computeCircleGalleryGeometry,
+  DEFAULT_GALLERY_CIRCLE_DIRECTION,
+  DEFAULT_GALLERY_CIRCLE_DOUBLE_ORBIT,
+  DEFAULT_GALLERY_CIRCLE_FOCUS_POSITION,
+  DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
+  DEFAULT_GALLERY_CIRCLE_MOTION_MODE,
+  DEFAULT_GALLERY_CIRCLE_RING_THICKNESS,
+  DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+  DEFAULT_GALLERY_CIRCLE_SPEED,
+  GAL_CIRCLE_CONFIG,
+  getFocusAngleRad,
+  resolveCircleDirection,
+  resolveCircleFocusPosition,
+  resolveCircleMotionMode,
+  resolveCircleRingThickness,
+  resolveCircleSpeed,
+  sampleCircleGalleryState,
 };
 
 export const QUOTE_STYLES_LIST: StyleMetadata[] = [
@@ -384,6 +426,7 @@ export const GALLERY_STYLES_LIST: StyleMetadata[] = [
   GAL_POLAROID_CONFIG,
   GAL_WALL_CONFIG,
   GAL_BUBBLES_CONFIG,
+  GAL_CIRCLE_CONFIG,
 ];
 
 export const STYLES_LIST: StyleMetadata[] = QUOTE_STYLES_LIST;
@@ -439,6 +482,7 @@ export const STYLE_RENDERERS: Record<StyleId, PureStyleRenderer> = {
   gal_polaroid: renderGalPolaroid,
   gal_wall: renderGalWall,
   gal_bubbles: renderGalBubbles,
+  gal_circle: renderGalCircle,
 };
 
 export type EventTimeGetter = (
@@ -489,6 +533,7 @@ export const STYLE_EVENT_TIME_GETTERS: Record<StyleId, EventTimeGetter> = {
   gal_polaroid: getGalPolaroidEventTimes,
   gal_wall: getGalWallEventTimes,
   gal_bubbles: getGalBubblesEventTimes,
+  gal_circle: getGalCircleEventTimes,
 };
 
 export const ARABIC_FONTS_LIST: { family: ArabicFontFamily; labelAr: string }[] = [

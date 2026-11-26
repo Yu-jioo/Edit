@@ -86,7 +86,8 @@ export function buildExportFileName(
     : '';
   if (isGalleryActive(custom)) {
     const pos = custom.position || 'center';
-    return `gallery-${styleId}-${bg}-${pos}-${resolution}.${ext}`;
+    const galSlug = styleId === 'gal_circle' ? 'circle' : styleId;
+    return `gallery-${galSlug}-${bg}-${pos}-${resolution}.${ext}`;
   }
   if (mode === 'video') {
     const pos = custom.position || 'center';

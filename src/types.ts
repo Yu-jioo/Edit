@@ -47,9 +47,14 @@ export type GalleryStyleId =
   | 'gal_orbit'
   | 'gal_polaroid'
   | 'gal_wall'
-  | 'gal_bubbles';
+  | 'gal_bubbles'
+  | 'gal_circle';
 
 export type GalleryAppearanceMode = 'stagger' | 'together';
+
+export type GalleryCircleMotionMode = 'continuous' | 'step';
+export type GalleryCircleDirection = 'cw' | 'ccw';
+export type GalleryCircleFocusPosition = 'top' | 'right' | 'left' | 'bottom';
 
 export type GalleryMediaKind = 'image' | 'video';
 
@@ -430,6 +435,14 @@ export interface StyleCustomization {
   galleryEndHold?: number; // 1.0 - 8.0s (default 3.0)
   galleryItems?: GalleryItemConfig[];
   galleryItemSfxType?: 'pop' | 'whoosh' | 'chime';
+  galleryCircleMotionMode?: GalleryCircleMotionMode; // 'continuous' (default) | 'step'
+  galleryCircleDirection?: GalleryCircleDirection; // 'cw' (default) | 'ccw'
+  galleryCircleSpeed?: number; // 4 - 40 deg/s (default 14)
+  galleryCircleFocusPosition?: GalleryCircleFocusPosition; // 'top' (default) | 'right' | 'left' | 'bottom'
+  galleryCircleShowTrack?: boolean; // default true
+  galleryCircleRingThickness?: number; // 1 - 8 px (default 3)
+  galleryCircleDoubleOrbit?: boolean; // default false (active only when items >= 5)
+  galleryCircleHubTitle?: string; // optional fallback hub title when focused item has no caption
   format: AspectRatioFormat;
   position?: PhrasePosition;
   backgroundMode?: BackgroundMode;
@@ -646,6 +659,14 @@ export interface StudioPreset {
   galleryEndHold?: number;
   galleryItems?: GalleryItemConfig[];
   galleryItemSfxType?: 'pop' | 'whoosh' | 'chime';
+  galleryCircleMotionMode?: GalleryCircleMotionMode;
+  galleryCircleDirection?: GalleryCircleDirection;
+  galleryCircleSpeed?: number;
+  galleryCircleFocusPosition?: GalleryCircleFocusPosition;
+  galleryCircleShowTrack?: boolean;
+  galleryCircleRingThickness?: number;
+  galleryCircleDoubleOrbit?: boolean;
+  galleryCircleHubTitle?: string;
   timeline: TimelineConfig;
   customization: StyleCustomization;
   exportSettings: Omit<ExportSettings, 'audioFile'>;

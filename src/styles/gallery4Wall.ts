@@ -37,7 +37,7 @@ export const GAL_WALL_CONFIG: StyleMetadata = {
   defaultAuthorFont: 'Cairo',
   defaultEnglishQuoteFont: 'Manrope',
   defaultEnglishAuthorFont: 'Outfit',
-  supportedBackgrounds: ['style', 'green'],
+  supportedBackgrounds: ['style', 'green', 'black'],
   recommendedBackground: 'green',
 };
 
@@ -86,6 +86,9 @@ export function renderGalWall(
 
   if (isGreen) {
     ctx.fillStyle = '#00FF00';
+    ctx.fillRect(0, 0, W, H);
+  } else if (bgMode === 'black') {
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
   } else {
     const bgCanvas = getCachedGlassWallBackground(W, H, accentColor);

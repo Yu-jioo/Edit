@@ -55,6 +55,7 @@ export const GALLERY_STYLE_IDS: GalleryStyleId[] = [
   'gal_polaroid',
   'gal_wall',
   'gal_bubbles',
+  'gal_circle',
 ];
 
 export const DEFAULT_GALLERY_ITEMS: GalleryItemConfig[] = [
@@ -102,7 +103,8 @@ export function isGalleryStyleId(styleId?: string | null): styleId is GallerySty
     styleId === 'gal_orbit' ||
     styleId === 'gal_polaroid' ||
     styleId === 'gal_wall' ||
-    styleId === 'gal_bubbles'
+    styleId === 'gal_bubbles' ||
+    styleId === 'gal_circle'
   );
 }
 
@@ -136,14 +138,10 @@ export function isGalleryBoxFullscreen(custom?: Partial<StyleCustomization> | nu
 
 /**
  * Resolves the effective background mode for Gallery styles:
- * - 'black' (Screen) is never supported -> falls back to 'green'
- * - 'style' is only active when fullscreen; non-fullscreen boxes use 'green'
+ * Supports 'style', 'green', and 'black' across all box sizes.
  */
 export function resolveGalleryBackground(custom: StyleCustomization): BackgroundMode {
-  const raw = resolveBackgroundMode(custom);
-  if (raw === 'green') return 'green';
-  if (raw === 'style' && isGalleryBoxFullscreen(custom)) return 'style';
-  return 'green';
+  return resolveBackgroundMode(custom);
 }
 
 export function getEffectiveGalleryItems(
@@ -253,8 +251,8 @@ export function computeGalleryFocusWeights(
     return { activeIndex: -1, weights };
   }
 
-  // Orbit style determines focus purely by frontmost depth in the 3D ring
-  if (styleId === 'gal_orbit') {
+  // Orbit & Circle styles determine focus purely by orbital proximity
+  if (styleId === 'gal_orbit' || styleId === 'gal_circle') {
     return { activeIndex: -1, weights };
   }
 
@@ -435,12 +433,12 @@ export function computeGalleryLayout(params: {
   const { cols, rows } = getSlotGridDimensions(n, boxAspect, format);
   const isScattered =
     styleId === 'gal_float' || styleId === 'gal_polaroid' || styleId === 'gal_bubbles';
-  const isCircular = styleId === 'gal_bubbles';
+  const isCircular = styleId === 'gal_bubbles' || styleId === 'gal_circle';
 
   // Inner safety pad so shadows/borders/float never touch box boundary
   const outerSafetyPad = clamp(Math.round(Math.min(boxWidth, boxHeight) * 0.032), 10, 28);
   const maxFloatBasePx = clamp(Math.min(boxWidth, boxHeight) * 0.022, 6, 18);
-  const focusScaleMax = highlightEnabled ? 1.08 : 1.0;
+  const focusScaleMax = highlightEnabled ? (styleId === 'gal_circle' ? 1.18 : 1.08) : 1.0;
 
   const usableW = Math.max(60, boxWidth - outerSafetyPad * 2);
   const usableH = Math.max(60, boxHeight - outerSafetyPad * 2);

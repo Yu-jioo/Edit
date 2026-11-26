@@ -47,6 +47,14 @@ import {
   DEFAULT_BRANCH_CAMERA_ZOOM,
   DEFAULT_CALM_FLYER_SPEED,
   DEFAULT_FLYER_FLIGHT_SPEED,
+  DEFAULT_GALLERY_CIRCLE_DIRECTION,
+  DEFAULT_GALLERY_CIRCLE_DOUBLE_ORBIT,
+  DEFAULT_GALLERY_CIRCLE_FOCUS_POSITION,
+  DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
+  DEFAULT_GALLERY_CIRCLE_MOTION_MODE,
+  DEFAULT_GALLERY_CIRCLE_RING_THICKNESS,
+  DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+  DEFAULT_GALLERY_CIRCLE_SPEED,
   DEFAULT_GALLERY_END_HOLD,
   DEFAULT_GALLERY_FLOAT_INTENSITY,
   DEFAULT_GALLERY_INTERVAL,
@@ -64,7 +72,6 @@ import {
   isCalmFlyerStyle,
   isFlyerStyleId,
   isGalleryActive,
-  isGalleryBoxFullscreen,
   isGalleryStyleId,
   MAX_GALLERY_ITEMS,
   MAX_GALLERY_VIDEOS,
@@ -82,6 +89,11 @@ import {
   resolveFlyerCreature,
   resolveFlyerFlightSpeed,
   resolveFlyerTheme,
+  resolveCircleDirection,
+  resolveCircleFocusPosition,
+  resolveCircleMotionMode,
+  resolveCircleRingThickness,
+  resolveCircleSpeed,
   resolveGalleryStyleId,
   resolvePointsCameraMode,
   resolvePointsCameraZoom,
@@ -562,6 +574,14 @@ export default function App() {
     galleryEndHold: DEFAULT_GALLERY_END_HOLD,
     galleryItems: DEFAULT_GALLERY_ITEMS,
     galleryItemSfxType: 'pop',
+    galleryCircleMotionMode: DEFAULT_GALLERY_CIRCLE_MOTION_MODE,
+    galleryCircleDirection: DEFAULT_GALLERY_CIRCLE_DIRECTION,
+    galleryCircleSpeed: DEFAULT_GALLERY_CIRCLE_SPEED,
+    galleryCircleFocusPosition: DEFAULT_GALLERY_CIRCLE_FOCUS_POSITION,
+    galleryCircleShowTrack: DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+    galleryCircleRingThickness: DEFAULT_GALLERY_CIRCLE_RING_THICKNESS,
+    galleryCircleDoubleOrbit: DEFAULT_GALLERY_CIRCLE_DOUBLE_ORBIT,
+    galleryCircleHubTitle: DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
   });
 
   // 3. Separate Timelines for Quote Mode (1.5 / 6.0 / 1.0), Key Phrase Mode (0.8 / 2.5 / 0.6), Image Mode (0.8 / 3.0 / 0.6), and Video Mode (0.6 / clip / 0.5)
@@ -1423,15 +1443,7 @@ export default function App() {
         customization.galleryStyleId || galleryStyleId
       );
       const galMeta = getStyleMetadata(targetGalStyle);
-      const boxFullscreen = isGalleryBoxFullscreen({
-        ...customization,
-        videoBox: customization.videoBox || DEFAULT_VIDEO_BOX,
-      });
-      const nextBg: BackgroundMode = boxFullscreen
-        ? galleryBgMode === 'style'
-          ? 'style'
-          : 'green'
-        : 'green';
+      const nextBg: BackgroundMode = galleryBgMode || 'green';
       setGalleryStyleId(targetGalStyle);
       setGalleryBgMode(nextBg);
       setCustomization((prev) => ({
@@ -1798,12 +1810,7 @@ export default function App() {
           customization.galleryStyleId || galleryStyleId
         );
         const galMeta = getStyleMetadata(targetGalStyle);
-        const boxFullscreen = isGalleryBoxFullscreen(customization);
-        const targetBg: BackgroundMode = boxFullscreen
-          ? galleryBgMode === 'style'
-            ? 'style'
-            : 'green'
-          : 'green';
+        const targetBg: BackgroundMode = galleryBgMode || 'green';
         setGalleryBgMode(targetBg);
         setCustomization((prev) => ({
           ...prev,
@@ -1860,12 +1867,7 @@ export default function App() {
           customization.galleryStyleId || galleryStyleId
         );
         const galMeta = getStyleMetadata(targetGalStyle);
-        const boxFullscreen = isGalleryBoxFullscreen(customization);
-        const targetBg: BackgroundMode = boxFullscreen
-          ? galleryBgMode === 'style'
-            ? 'style'
-            : 'green'
-          : 'green';
+        const targetBg: BackgroundMode = galleryBgMode || 'green';
         setGalleryBgMode(targetBg);
         setCustomization((prev) => ({
           ...prev,
@@ -2093,10 +2095,9 @@ export default function App() {
       const galId = resolveGalleryStyleId(styleId);
       setGalleryStyleId(galId);
 
-      const boxFullscreen = isGalleryBoxFullscreen(customization);
       let nextBg = resolveBackgroundMode(customization);
-      if (!supported.includes(nextBg) || (nextBg === 'style' && !boxFullscreen)) {
-        nextBg = 'green';
+      if (!supported.includes(nextBg)) {
+        nextBg = meta.recommendedBackground || 'green';
       }
       setGalleryBgMode(nextBg);
 
@@ -2490,8 +2491,6 @@ export default function App() {
     const supported = activeStyleMeta.supportedBackgrounds || ['style', 'green', 'black'];
     if (!supported.includes(nextBg)) return;
     if (galleryActive) {
-      if (nextBg === 'black') return;
-      if (nextBg === 'style' && !isGalleryBoxFullscreen(customization)) return;
       setGalleryBgMode(nextBg);
       setCustomization((prev) => ({
         ...prev,
@@ -3084,6 +3083,19 @@ export default function App() {
         ({ ...metaOnly }) => metaOnly
       ),
       galleryItemSfxType: customization.galleryItemSfxType || 'pop',
+      galleryCircleMotionMode: resolveCircleMotionMode(customization.galleryCircleMotionMode),
+      galleryCircleDirection: resolveCircleDirection(customization.galleryCircleDirection),
+      galleryCircleSpeed: resolveCircleSpeed(customization.galleryCircleSpeed),
+      galleryCircleFocusPosition: resolveCircleFocusPosition(
+        customization.galleryCircleFocusPosition
+      ),
+      galleryCircleShowTrack:
+        customization.galleryCircleShowTrack ?? DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+      galleryCircleRingThickness: resolveCircleRingThickness(
+        customization.galleryCircleRingThickness
+      ),
+      galleryCircleDoubleOrbit: Boolean(customization.galleryCircleDoubleOrbit),
+      galleryCircleHubTitle: customization.galleryCircleHubTitle ?? DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
       branchStyleId: resolveBranchStyleId(customization.branchStyleId || branchStyleId),
       branchLayout: customization.branchLayout || 'auto',
       branchCamera: resolveBranchCameraMode(customization),
@@ -3109,6 +3121,20 @@ export default function App() {
           ({ ...metaOnly }) => metaOnly
         ),
         galleryItemSfxType: customization.galleryItemSfxType || 'pop',
+        galleryCircleMotionMode: resolveCircleMotionMode(customization.galleryCircleMotionMode),
+        galleryCircleDirection: resolveCircleDirection(customization.galleryCircleDirection),
+        galleryCircleSpeed: resolveCircleSpeed(customization.galleryCircleSpeed),
+        galleryCircleFocusPosition: resolveCircleFocusPosition(
+          customization.galleryCircleFocusPosition
+        ),
+        galleryCircleShowTrack:
+          customization.galleryCircleShowTrack ?? DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+        galleryCircleRingThickness: resolveCircleRingThickness(
+          customization.galleryCircleRingThickness
+        ),
+        galleryCircleDoubleOrbit: Boolean(customization.galleryCircleDoubleOrbit),
+        galleryCircleHubTitle:
+          customization.galleryCircleHubTitle ?? DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
         pointsCamera: customization.pointsCamera || DEFAULT_POINTS_CAMERA,
         pointsCameraZoom: resolvePointsCameraZoom(customization),
         branchStyleId: resolveBranchStyleId(customization.branchStyleId || branchStyleId),
@@ -3157,15 +3183,11 @@ export default function App() {
     setStudioMode(targetMode);
     if (loadedGalleryActive) {
       setGalleryStyleId(loadedGalleryStyleId);
-      const loadedBox =
-        preset.videoBox || preset.customization.videoBox || DEFAULT_VIDEO_BOX;
-      const boxFullscreen = isGalleryBoxFullscreen({
-        videoBox: loadedBox,
-        position: preset.customization.position,
-      });
       const loadedBg: BackgroundMode =
-        preset.customization.backgroundMode === 'style' && boxFullscreen
-          ? 'style'
+        preset.customization.backgroundMode === 'style' ||
+        preset.customization.backgroundMode === 'black' ||
+        preset.customization.backgroundMode === 'green'
+          ? preset.customization.backgroundMode
           : 'green';
       setGalleryBgMode(loadedBg);
       // Clear runtime media files (files are never stored in presets) & notify user to re-select
@@ -3535,6 +3557,32 @@ export default function App() {
         preset.galleryItemSfxType ||
         preset.customization.galleryItemSfxType ||
         'pop',
+      galleryCircleMotionMode: resolveCircleMotionMode(
+        preset.galleryCircleMotionMode ?? preset.customization.galleryCircleMotionMode
+      ),
+      galleryCircleDirection: resolveCircleDirection(
+        preset.galleryCircleDirection ?? preset.customization.galleryCircleDirection
+      ),
+      galleryCircleSpeed: resolveCircleSpeed(
+        preset.galleryCircleSpeed ?? preset.customization.galleryCircleSpeed
+      ),
+      galleryCircleFocusPosition: resolveCircleFocusPosition(
+        preset.galleryCircleFocusPosition ?? preset.customization.galleryCircleFocusPosition
+      ),
+      galleryCircleShowTrack:
+        preset.galleryCircleShowTrack ??
+        preset.customization.galleryCircleShowTrack ??
+        DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+      galleryCircleRingThickness: resolveCircleRingThickness(
+        preset.galleryCircleRingThickness ?? preset.customization.galleryCircleRingThickness
+      ),
+      galleryCircleDoubleOrbit: Boolean(
+        preset.galleryCircleDoubleOrbit ?? preset.customization.galleryCircleDoubleOrbit
+      ),
+      galleryCircleHubTitle:
+        preset.galleryCircleHubTitle ??
+        preset.customization.galleryCircleHubTitle ??
+        DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
       pointsCamera:
         preset.pointsCamera ||
         preset.customization.pointsCamera ||
@@ -3674,6 +3722,19 @@ export default function App() {
         ({ ...metaOnly }) => metaOnly
       ),
       galleryItemSfxType: customization.galleryItemSfxType || 'pop',
+      galleryCircleMotionMode: resolveCircleMotionMode(customization.galleryCircleMotionMode),
+      galleryCircleDirection: resolveCircleDirection(customization.galleryCircleDirection),
+      galleryCircleSpeed: resolveCircleSpeed(customization.galleryCircleSpeed),
+      galleryCircleFocusPosition: resolveCircleFocusPosition(
+        customization.galleryCircleFocusPosition
+      ),
+      galleryCircleShowTrack:
+        customization.galleryCircleShowTrack ?? DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+      galleryCircleRingThickness: resolveCircleRingThickness(
+        customization.galleryCircleRingThickness
+      ),
+      galleryCircleDoubleOrbit: Boolean(customization.galleryCircleDoubleOrbit),
+      galleryCircleHubTitle: customization.galleryCircleHubTitle ?? DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
       branchStyleId: resolveBranchStyleId(customization.branchStyleId || branchStyleId),
       branchLayout: customization.branchLayout || 'auto',
       branchCamera: resolveBranchCameraMode(customization),
@@ -3699,6 +3760,20 @@ export default function App() {
           ({ ...metaOnly }) => metaOnly
         ),
         galleryItemSfxType: customization.galleryItemSfxType || 'pop',
+        galleryCircleMotionMode: resolveCircleMotionMode(customization.galleryCircleMotionMode),
+        galleryCircleDirection: resolveCircleDirection(customization.galleryCircleDirection),
+        galleryCircleSpeed: resolveCircleSpeed(customization.galleryCircleSpeed),
+        galleryCircleFocusPosition: resolveCircleFocusPosition(
+          customization.galleryCircleFocusPosition
+        ),
+        galleryCircleShowTrack:
+          customization.galleryCircleShowTrack ?? DEFAULT_GALLERY_CIRCLE_SHOW_TRACK,
+        galleryCircleRingThickness: resolveCircleRingThickness(
+          customization.galleryCircleRingThickness
+        ),
+        galleryCircleDoubleOrbit: Boolean(customization.galleryCircleDoubleOrbit),
+        galleryCircleHubTitle:
+          customization.galleryCircleHubTitle ?? DEFAULT_GALLERY_CIRCLE_HUB_TITLE,
         pointsCamera: customization.pointsCamera || DEFAULT_POINTS_CAMERA,
         pointsCameraZoom: resolvePointsCameraZoom(customization),
         branchStyleId: resolveBranchStyleId(customization.branchStyleId || branchStyleId),
@@ -3928,23 +4003,6 @@ export default function App() {
 
   const hasGalleryGreenPixelClash =
     galleryActive && currentBgMode === 'green' && galleryGreenPixelRatio > 0.08;
-
-  const galleryBoxFullscreen = galleryActive ? isGalleryBoxFullscreen(customization) : false;
-
-  // Enforce: In Multiple Items mode, style background is ONLY allowed in fullscreen;
-  // non-fullscreen boxes automatically switch to Chroma Key green.
-  useEffect(() => {
-    if (!galleryActive) return;
-    const bg = resolveBackgroundMode(customization);
-    if (bg === 'black' || (bg === 'style' && !galleryBoxFullscreen)) {
-      setGalleryBgMode('green');
-      setCustomization((prev) => ({
-        ...prev,
-        backgroundMode: 'green',
-        greenScreen: true,
-      }));
-    }
-  }, [galleryActive, galleryBoxFullscreen, customization]);
 
   const availableFontsForCurrentStyle = useMemo(() => {
     if (activeStyleMeta.allowedFonts && activeStyleMeta.allowedFonts.length > 0) {
@@ -6566,22 +6624,16 @@ export default function App() {
                   <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-slate-950 border border-slate-800 rounded-xl">
                     {BACKGROUND_MODE_OPTIONS.map((bgOpt) => {
                       const isStyleSupported = supportedBgs.includes(bgOpt.id);
-                      const isGalleryStyleRestricted =
-                        galleryActive && bgOpt.id === 'style' && !galleryBoxFullscreen;
-                      const isDisabled = !isStyleSupported || isGalleryStyleRestricted;
+                      const isDisabled = !isStyleSupported;
                       const isSelected = currentBgMode === bgOpt.id;
 
-                      const tooltipAr = isGalleryStyleRestricted
-                        ? 'خلفية الستايل متاحة فقط عند ملء الشاشة (Fullscreen) — استخدم أخضر Chroma Key للصناديق الأصغر'
-                        : !isStyleSupported
-                          ? bgOpt.id === 'black'
-                            ? galleryActive
-                              ? 'وضع Screen غير متاح لأن المناطق الداكنة في الصور والفيديوهات ستصبح شفافة عند الدمج — استخدم خلفية الستايل أو أخضر Chroma Key'
-                              : studioMode === 'video'
-                                ? 'وضع Screen غير متاح في وضع الفيديو لأن المناطق الداكنة في المقطع ستصبح شفافة عند الدمج — استخدم خلفية الستايل أو أخضر Chroma Key'
-                                : 'غير مدعوم لهذا الستايل لأن الحبر الداكن والورق يختفيان في وضع Screen — استخدم خلفية الستايل أو أخضر Chroma Key'
-                            : 'غير مدعوم لهذا الستايل بسبب التوهج الضوئي المتدرج — استخدم خلفية الستايل أو أسود Screen'
-                          : bgOpt.subLabelAr;
+                      const tooltipAr = !isStyleSupported
+                        ? bgOpt.id === 'black'
+                          ? studioMode === 'video'
+                            ? 'وضع Screen غير متاح في وضع الفيديو لأن المناطق الداكنة في المقطع ستصبح شفافة عند الدمج — استخدم خلفية الستايل أو أخضر Chroma Key'
+                            : 'غير مدعوم لهذا الستايل لأن الحبر الداكن والورق يختفيان في وضع Screen — استخدم خلفية الستايل أو أخضر Chroma Key'
+                          : 'غير مدعوم لهذا الستايل بسبب التوهج الضوئي المتدرج — استخدم خلفية الستايل أو أسود Screen'
+                        : bgOpt.subLabelAr;
 
                       return (
                         <button
